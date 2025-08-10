@@ -32,3 +32,61 @@ APlayerCharacter::APlayerCharacter()
 
 
 }
+
+void APlayerCharacter::StartSprinting()
+{
+	if (CurrentStamina > 0.f)
+	{
+		bIsSprinting = true;
+		GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
+
+		GetWorld()->GetTimerManager().ClearTimer(StaminaTimerHandle);
+		GetWorld()->GetTimerManager().SetTimer(StaminaTimerHandle, this, &APlayerCharacter::ConsumeStamina, 0.1f, true);
+	}
+}
+
+void APlayerCharacter::StopSprinting()
+{
+	bIsSprinting = false;
+	GetCharacterMovement()->MaxWalkSpeed = 300.f;
+
+	GetWorld()->GetTimerManager().ClearTimer(StaminaTimerHandle);
+	GetWorld()->GetTimerManager().SetTimer(StaminaTimerHandle, this, &APlayerCharacter::RecoverStamina, 0.1f, true);
+
+}
+
+void APlayerCharacter::ConsumeStamina()
+{
+	const float OldStamina = CurrentStamina;
+	CurrentStamina -= StaminaConsumptionRate * 0.1f;
+
+	if (CurrentStamina <= 0.f)
+	{
+		CurrentStamina = 0.f;
+		StopSprinting();
+	}
+
+	if (OldStamina != CurrentStamina)
+	{
+		OnStaminaChanged.Broadcast(CurrentStamina, MaxStamina);
+	}
+}
+
+void APlayerCharacter::RecoverStamina()
+{
+	const float OldStamina = CurrentStamina;
+	CurrentStamina += StaminaRecoveryRate * 0.1f;
+
+	if (CurrentStamina >= MaxStamina)
+	{
+		CurrentStamina = MaxStamina;
+		// 스태미나가 가득 차면 더 이상 회복할 필요가 없으므로 타이머 중지
+		GetWorld()->GetTimerManager().ClearTimer(StaminaTimerHandle);
+	}
+    
+	// 값 변경 시 델리게이트 호출
+	if (OldStamina != CurrentStamina)
+	{
+		OnStaminaChanged.Broadcast(CurrentStamina, MaxStamina); // TwoParams 버전으로 수정
+	}
+}

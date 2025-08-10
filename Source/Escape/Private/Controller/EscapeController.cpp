@@ -3,6 +3,7 @@
 #include "Controller/EscapeController.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
+#include "Character/PlayerCharacter.h"
 
 
 AEscapeController::AEscapeController()
@@ -29,6 +30,12 @@ void AEscapeController::SetupInputComponent()
 	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, & AEscapeController::Move);
 	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, & AEscapeController::Look);
 
+	if (SprintAction)
+	{
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, & AEscapeController::StartSprint);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, & AEscapeController::StopSprint);
+
+	}
 
 }
 
@@ -58,5 +65,21 @@ void AEscapeController::Look(const FInputActionValue& InputAction)
 		// 마우스의 Y축 움직임(상하)은 컨트롤러의 Pitch 회전에 영향을 줍니다.
 		ControlledPawn->AddControllerYawInput(LookAxisVector.X);
 		ControlledPawn->AddControllerPitchInput(LookAxisVector.Y);
+	}
+}
+
+void AEscapeController::StartSprint()
+{
+	if (APlayerCharacter* PlayerCharacter = GetPawn<APlayerCharacter>())
+	{
+		PlayerCharacter->StartSprinting();
+	}
+}
+
+void AEscapeController::StopSprint()
+{
+	if (APlayerCharacter* PlayerCharacter = GetPawn<APlayerCharacter>())
+	{
+		PlayerCharacter->StopSprinting();
 	}
 }

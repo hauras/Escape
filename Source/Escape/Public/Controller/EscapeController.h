@@ -31,9 +31,14 @@ private:
 	UPROPERTY(EditAnywhere, Category="Input")
 	TObjectPtr<UInputAction> LookAction;
 
+	UPROPERTY(EditAnywhere, Category = "Input")
+	TObjectPtr<UInputAction> SprintAction;
+	
 	// 점프 필요하면 추후 추가 예정
 	
 	void Move(const FInputActionValue& InputAction);
 	void Look(const FInputActionValue& InputAction);
+	void StartSprint();
+	void StopSprint();
 
 };
