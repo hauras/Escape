@@ -1,36 +1,63 @@
-
-
 #include "Character/PlayerCharacter.h"
-
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "TimerManager.h"
 
 APlayerCharacter::APlayerCharacter()
 {
-	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.f);
+	PrimaryActorTick.bCanEverTick = false; 
 
+	// --- 컴포넌트 설정 ---
+	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.f);
+	
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
 	bUseControllerRotationYaw = false;
-
+	
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetRootComponent());
 	CameraBoom->TargetArmLength = 200.f;
 	CameraBoom->SocketOffset = FVector(0.f, 55.f, 65.f);
 	CameraBoom->bUsePawnControlRotation = true;
-
+	
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
-
+	
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 500.f, 0.f);
-	GetCharacterMovement()->MaxWalkSpeed = 400.f;
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 
+	MaxStamina = 100.f;
+	StaminaConsumptionRate = 20.f;
+	StaminaRecoveryRate = 15.f;
+	StaminaUpdateInterval = 0.1f;
+	SprintSpeed = 600.f;
+	WalkSpeed = 400.f; 
 
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+}
+
+void APlayerCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	SetStamina(MaxStamina);
+}
+
+// 스태미나를 변경하고 UI에 알리는 유일한 창구
+void APlayerCharacter::SetStamina(float NewStamina)
+{
+	const float OldStamina = CurrentStamina;
+	CurrentStamina = FMath::Clamp(NewStamina, 0.0f, MaxStamina);
+
+	if (OldStamina != CurrentStamina && OnStaminaPercentChanged.IsBound())
+	{
+		// 3. 델리게이트 이름과 파라미터를 헤더와 통일합니다.
+		const float StaminaPercent = MaxStamina > 0.f ? CurrentStamina / MaxStamina : 0.f;
+		OnStaminaPercentChanged.Broadcast(StaminaPercent);
+	}
 }
 
 void APlayerCharacter::StartSprinting()
@@ -41,52 +68,34 @@ void APlayerCharacter::StartSprinting()
 		GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
 
 		GetWorld()->GetTimerManager().ClearTimer(StaminaTimerHandle);
-		GetWorld()->GetTimerManager().SetTimer(StaminaTimerHandle, this, &APlayerCharacter::ConsumeStamina, 0.1f, true);
+		GetWorld()->GetTimerManager().SetTimer(StaminaTimerHandle, this, &APlayerCharacter::ConsumeStamina, StaminaUpdateInterval, true);
 	}
 }
 
 void APlayerCharacter::StopSprinting()
 {
 	bIsSprinting = false;
-	GetCharacterMovement()->MaxWalkSpeed = 300.f;
+	// 4. '매직 넘버' 대신 변수를 사용합니다.
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 
 	GetWorld()->GetTimerManager().ClearTimer(StaminaTimerHandle);
-	GetWorld()->GetTimerManager().SetTimer(StaminaTimerHandle, this, &APlayerCharacter::RecoverStamina, 0.1f, true);
-
+	GetWorld()->GetTimerManager().SetTimer(StaminaTimerHandle, this, &APlayerCharacter::RecoverStamina, StaminaUpdateInterval, true);
 }
 
 void APlayerCharacter::ConsumeStamina()
 {
-	const float OldStamina = CurrentStamina;
-	CurrentStamina -= StaminaConsumptionRate * 0.1f;
-
+	SetStamina(CurrentStamina - StaminaConsumptionRate * StaminaUpdateInterval);
 	if (CurrentStamina <= 0.f)
 	{
-		CurrentStamina = 0.f;
-		StopSprinting();
-	}
-
-	if (OldStamina != CurrentStamina)
-	{
-		OnStaminaChanged.Broadcast(CurrentStamina, MaxStamina);
+		StopSprinting(); 
 	}
 }
 
 void APlayerCharacter::RecoverStamina()
 {
-	const float OldStamina = CurrentStamina;
-	CurrentStamina += StaminaRecoveryRate * 0.1f;
-
+	SetStamina(CurrentStamina + StaminaRecoveryRate * StaminaUpdateInterval);
 	if (CurrentStamina >= MaxStamina)
 	{
-		CurrentStamina = MaxStamina;
-		// 스태미나가 가득 차면 더 이상 회복할 필요가 없으므로 타이머 중지
 		GetWorld()->GetTimerManager().ClearTimer(StaminaTimerHandle);
-	}
-    
-	// 값 변경 시 델리게이트 호출
-	if (OldStamina != CurrentStamina)
-	{
-		OnStaminaChanged.Broadcast(CurrentStamina, MaxStamina); // TwoParams 버전으로 수정
 	}
 }
