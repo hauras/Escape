@@ -35,7 +35,7 @@ protected:
 	// --- 4. 데이터 (Variables) ---
 	// 외부에서 직접 수정할 수 없도록 protected로 선언하는 것이 더 안전합니다.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameState|Threat", meta = (AllowPrivateAccess = "true"))
-	float CurrentThreat = 0.f;
+	float CurrentThreat = 100.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameState|Threat", meta = (AllowPrivateAccess = "true"))
 	float MaxThreat = 100.f;
