@@ -4,13 +4,13 @@
 #include "Character/CharacterBase.h" // ACharacterBase를 상속받는 것이 맞다면 그대로 둡니다.
 #include "PlayerCharacter.generated.h"
 
-// .h 파일 개선점:
-// 1. 클래스에 대한 포인터만 필요할 경우, 전체 헤더를 include하는 대신 '전방 선언'을 사용하면 컴파일 시간이 단축됩니다.
 class UCameraComponent;
 class USpringArmComponent;
+class USpotLightComponent;
+class UStaticMeshComponent;
 
-// 2. 델리게이트 이름을 더 명확하게 수정하고, 여기에서만 선언합니다.
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStaminaPercentChangedDelegate, float, NewPercent);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBatteryChangedSignature, float, CurrentValue, float, MaxValue);
 
 UCLASS()
 class ESCAPE_API APlayerCharacter : public ACharacterBase
@@ -20,16 +20,21 @@ class ESCAPE_API APlayerCharacter : public ACharacterBase
 public:
 	APlayerCharacter();
 
-	/** UI가 구독할 스태미나 변경 델리게이트입니다. */
 	UPROPERTY(BlueprintAssignable, Category = "UI")
 	FOnStaminaPercentChangedDelegate OnStaminaPercentChanged;
 
+	UPROPERTY(BlueprintAssignable, Category = "UI")
+	FOnBatteryChangedSignature OnBatteryChanged;
+	
 	// 스프린트 시작/종료 함수. 블루프린트에서도 호출할 수 있도록 UFUNCTION을 붙입니다.
 	UFUNCTION(BlueprintCallable, Category = "Player Action")
 	void StartSprinting();
 
 	UFUNCTION(BlueprintCallable, Category = "Player Action")
 	void StopSprinting();
+
+	UFUNCTION(BlueprintCallable, Category = "Player Action")
+	void ToggleFlashlight();
 
 protected:
 	// 게임 시작 시 호출됩니다.
@@ -42,7 +47,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	UCameraComponent* FollowCamera;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Flashlight")
+	TObjectPtr<UStaticMeshComponent> FlashlightMesh;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Flashlight")
+	TObjectPtr<USpotLightComponent> Spotlight;
+	
 	// --- 스태미나 관련 프로퍼티 (에디터에서 수정 가능) ---
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player Stats|Stamina")
 	float MaxStamina;
@@ -61,7 +71,19 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player Stats|Movement")
 	float WalkSpeed;
-	
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Flashlight")
+	bool bIsFlashlightOn = false;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Flashlight|Battery")
+	float MaxBattery = 100.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Flashlight|Battery")
+	float CurrentBattery;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Flashlight|Battery")
+	float BatteryConsumptionRate = 2.f;
+
 private:
 	// --- 내부 상태 변수 (UPROPERTY 불필요) ---
 	float CurrentStamina;

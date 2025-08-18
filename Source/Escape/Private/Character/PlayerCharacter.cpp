@@ -4,6 +4,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "TimerManager.h"
+#include "Components/SpotLightComponent.h"
 
 APlayerCharacter::APlayerCharacter()
 {
@@ -36,14 +37,44 @@ APlayerCharacter::APlayerCharacter()
 	StaminaUpdateInterval = 0.1f;
 	SprintSpeed = 600.f;
 	WalkSpeed = 400.f; 
-
+	
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+
+	FlashlightMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FlashlightMesh"));
+    FlashlightMesh->SetupAttachment(GetMesh(), FName("FlashlightSocket"));
+
+	Spotlight = CreateDefaultSubobject<USpotLightComponent>(TEXT("Spotlight"));
+	Spotlight->SetupAttachment(FollowCamera);
+	Spotlight->SetVisibility(false); // 처음에는 꺼진 상태로 시작
+	Spotlight->Intensity = 5000.f; // 빛의 세기 (나중에 조절)
+	Spotlight->OuterConeAngle = 25.f; // 빛의 각도 (나중에 조절)
 }
 
 void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	SetStamina(MaxStamina);
+	CurrentBattery = MaxBattery; // 배터리 가득 채우고 시작
+
+}
+
+void APlayerCharacter::ToggleFlashlight()
+{
+	UE_LOG(LogTemp, Warning, TEXT("3. Character::ToggleFlashlight() Called. CurrentBattery is %f"), CurrentBattery);
+
+	if (CurrentBattery > 0.f)
+	{
+		bIsFlashlightOn = !bIsFlashlightOn;
+		Spotlight->SetVisibility(bIsFlashlightOn);
+		UE_LOG(LogTemp, Warning, TEXT("4. Flashlight visibility set to: %s"), bIsFlashlightOn ? TEXT("True") : TEXT("False"));
+
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Flashlight NOT turned on. Battery is empty."));
+		bIsFlashlightOn = false;
+		Spotlight->SetVisibility(false);
+	}
 }
 
 // 스태미나를 변경하고 UI에 알리는 유일한 창구
