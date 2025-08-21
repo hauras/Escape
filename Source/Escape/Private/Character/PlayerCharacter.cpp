@@ -5,10 +5,13 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "TimerManager.h"
 #include "Components/SpotLightComponent.h"
+#include "Interface/InteractInterface.h"
+#include "DrawDebugHelpers.h" // 디버깅을 위해 추가
+#include "Kismet/KismetSystemLibrary.h"
 
 APlayerCharacter::APlayerCharacter()
 {
-	PrimaryActorTick.bCanEverTick = false; 
+	PrimaryActorTick.bCanEverTick = true; 
 
 	// --- 컴포넌트 설정 ---
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.f);
@@ -58,6 +61,14 @@ void APlayerCharacter::BeginPlay()
 
 }
 
+void APlayerCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	TraceForInteractable();
+
+}
+
 void APlayerCharacter::ToggleFlashlight()
 {
 	UE_LOG(LogTemp, Warning, TEXT("3. Character::ToggleFlashlight() Called. CurrentBattery is %f"), CurrentBattery);
@@ -74,6 +85,14 @@ void APlayerCharacter::ToggleFlashlight()
 		UE_LOG(LogTemp, Warning, TEXT("Flashlight NOT turned on. Battery is empty."));
 		bIsFlashlightOn = false;
 		Spotlight->SetVisibility(false);
+	}
+}
+
+void APlayerCharacter::PerformInteraction()
+{
+	if (FocusedInteractable)
+	{
+		IInteractInterface::Execute_Interact(FocusedInteractable.GetObject(), this);
 	}
 }
 
@@ -128,5 +147,58 @@ void APlayerCharacter::RecoverStamina()
 	if (CurrentStamina >= MaxStamina)
 	{
 		GetWorld()->GetTimerManager().ClearTimer(StaminaTimerHandle);
+	}
+}
+
+void APlayerCharacter::TraceForInteractable()
+{
+	// ... (StartLocation, EndLocation, HitResult 선언 부분은 동일) ...
+	FVector StartLocation;
+	FRotator ViewRotation;
+	if (!GetController()) return;
+	GetController()->GetPlayerViewPoint(StartLocation, ViewRotation);
+
+	const FVector EndLocation = StartLocation + (ViewRotation.Vector() * InteractionDistance);
+	FHitResult HitResult;
+
+	// --- 바로 이 부분을 수정합니다 ---
+
+	// [수정 1] 구체의 반지름(크기)을 30.f에서 20.f로 줄였습니다.
+	const float SphereRadius = 15.f; 
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(this);
+
+	bool bHit = UKismetSystemLibrary::SphereTraceSingle(
+		this,
+		StartLocation,
+		EndLocation,
+		SphereRadius,
+		UEngineTypes::ConvertToTraceType(ECC_Visibility),
+		false,
+		ActorsToIgnore,
+		// [수정 2] 디버그 드로잉 옵션을 EDrawDebugTrace::ForDuration (계속 보임) 에서
+		// EDrawDebugTrace::None (안 보임) 으로 변경했습니다.
+		EDrawDebugTrace::None, 
+		HitResult,
+		true
+	);
+	// -----------------------------
+
+	if (bHit && HitResult.GetActor())
+	{
+		TScriptInterface<IInteractInterface> InteractableActor = HitResult.GetActor();
+		if (InteractableActor)
+		{
+			if (InteractableActor != FocusedInteractable)
+			{
+				FocusedInteractable = InteractableActor;
+			}
+			return;
+		}
+	}
+	
+	if (FocusedInteractable)
+	{
+		FocusedInteractable = nullptr;
 	}
 }

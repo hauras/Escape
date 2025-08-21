@@ -1,13 +1,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Character/CharacterBase.h" // ACharacterBase를 상속받는 것이 맞다면 그대로 둡니다.
+#include "Character/CharacterBase.h" 
 #include "PlayerCharacter.generated.h"
 
 class UCameraComponent;
 class USpringArmComponent;
 class USpotLightComponent;
 class UStaticMeshComponent;
+class IInteractInterface; 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStaminaPercentChangedDelegate, float, NewPercent);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBatteryChangedSignature, float, CurrentValue, float, MaxValue);
@@ -36,9 +37,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Player Action")
 	void ToggleFlashlight();
 
+    UFUNCTION(BlueprintCallable, Category = "Interaction")
+	void PerformInteraction();
 protected:
 	// 게임 시작 시 호출됩니다.
-	virtual void BeginPlay() override;
+	virtual auto BeginPlay() -> void override;
+	virtual void Tick(float DeltaTime) override;
 
 	// --- 컴포넌트 ---
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
@@ -96,4 +100,12 @@ private:
 	void SetStamina(float NewStamina);
 	void ConsumeStamina();
 	void RecoverStamina();
+
+	void TraceForInteractable();
+
+	UPROPERTY(EditDefaultsOnly, Category = "Interaction")
+	float InteractionDistance = 400.f;
+
+	UPROPERTY(VisibleAnywhere)
+	TScriptInterface<IInteractInterface> FocusedInteractable;
 };

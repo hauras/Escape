@@ -37,11 +37,14 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	TObjectPtr<UInputAction> ToggleFlashlightAction;
 	// 점프 필요하면 추후 추가 예정
+
+	UPROPERTY(EditAnywhere, Category = "Input")
+	TObjectPtr<UInputAction> InteractAction;
 	
 	void Move(const FInputActionValue& InputAction);
 	void Look(const FInputActionValue& InputAction);
 	void StartSprint();
 	void StopSprint();
 	void ToggleFlashLight();
-
+	void Interact();
 };

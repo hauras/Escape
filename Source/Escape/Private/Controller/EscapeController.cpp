@@ -30,6 +30,7 @@ void AEscapeController::SetupInputComponent()
 	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, & AEscapeController::Move);
 	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, & AEscapeController::Look);
 	EnhancedInputComponent->BindAction(ToggleFlashlightAction, ETriggerEvent::Started, this, & AEscapeController::ToggleFlashLight);
+	EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, & AEscapeController::Interact);
 
 	if (SprintAction)
 	{
@@ -87,15 +88,17 @@ void AEscapeController::StopSprint()
 
 void AEscapeController::ToggleFlashLight()
 {
-	UE_LOG(LogTemp, Warning, TEXT("1. Controller::ToggleFlashLight() Called"));
 
 	if (APlayerCharacter* PlayerCharacter = GetPawn<APlayerCharacter>())
 	{
 		PlayerCharacter->ToggleFlashlight();
 	}
-	else
+}
+
+void AEscapeController::Interact()
+{
+	if (APlayerCharacter* PlayerCharacter = GetPawn<APlayerCharacter>())
 	{
-		// 로그 추가: 만약 캐릭터를 가져오지 못했다면 여기서 문제가 발생
-		UE_LOG(LogTemp, Error, TEXT("ERROR: GetPawn<APlayerCharacter>() failed!"));
+		PlayerCharacter->PerformInteraction();
 	}
 }
