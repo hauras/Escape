@@ -3,7 +3,9 @@
 #include "Controller/EscapeController.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
+#include "Blueprint/UserWidget.h"
 #include "Character/PlayerCharacter.h"
+#include "Kismet/GameplayStatics.h"
 
 
 AEscapeController::AEscapeController()
@@ -36,8 +38,14 @@ void AEscapeController::SetupInputComponent()
 	{
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, & AEscapeController::StartSprint);
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, & AEscapeController::StopSprint);
-
 	}
+	if (ToggleMouseModeAction)
+	{
+		EnhancedInputComponent->BindAction(ToggleMouseModeAction, ETriggerEvent::Started, this, &AEscapeController::ToggleMouseMode);
+	}
+	
+
+	
 
 }
 
@@ -100,5 +108,37 @@ void AEscapeController::Interact()
 	if (APlayerCharacter* PlayerCharacter = GetPawn<APlayerCharacter>())
 	{
 		PlayerCharacter->PerformInteraction();
+	}
+}
+
+void AEscapeController::ToggleMouseMode()
+{
+	bIsMouseMode = !bIsMouseMode;
+
+	if (bIsMouseMode) // 마우스 사용 모드로 전환할 때
+	{
+		// 1. 입력 모드를 '게임 + UI' 모드로 변경
+		FInputModeGameAndUI InputModeData;
+		InputModeData.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		InputModeData.SetHideCursorDuringCapture(false);
+		SetInputMode(InputModeData);
+
+		// 2. 마우스 커서 표시
+		bShowMouseCursor = true;
+
+		// 3. (선택적) 게임 일시 정지 - 우리는 안 하기로 했음
+		UGameplayStatics::SetGamePaused(this, true);
+	}
+	else // 게임 플레이 모드로 돌아갈 때
+	{
+		// 1. 입력 모드를 '게임 전용' 모드로 변경
+		FInputModeGameOnly InputModeData;
+		SetInputMode(InputModeData);
+
+		// 2. 마우스 커서 숨기기
+		bShowMouseCursor = false;
+
+		// 3. (선택적) 게임 일시 정지 해제
+		UGameplayStatics::SetGamePaused(this, false);
 	}
 }

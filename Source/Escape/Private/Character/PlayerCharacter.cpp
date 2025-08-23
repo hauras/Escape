@@ -110,6 +110,20 @@ void APlayerCharacter::SetStamina(float NewStamina)
 	}
 }
 
+void APlayerCharacter::PickupItem(EItemType ItemType)
+{
+	if (CurrentItemType == EItemType::EItemType_None)
+	{
+		CurrentItemType = ItemType;
+
+		if (OnItemChanged.IsBound())
+		{
+			OnItemChanged.Broadcast(ItemType);
+		}
+	}
+	
+}
+
 void APlayerCharacter::StartSprinting()
 {
 	if (CurrentStamina > 0.f)

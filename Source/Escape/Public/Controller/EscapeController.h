@@ -37,9 +37,18 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	TObjectPtr<UInputAction> ToggleFlashlightAction;
 	// 점프 필요하면 추후 추가 예정
-
+	UPROPERTY(EditAnywhere, Category = "Input")
+	TObjectPtr<UInputAction> ToggleMouseModeAction;
+	
 	UPROPERTY(EditAnywhere, Category = "Input")
 	TObjectPtr<UInputAction> InteractAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UUserWidget> InfoScreenClass;
+
+	// 실제로 생성된 정보 창 위젯을 담을 변수.
+	UPROPERTY()
+	TObjectPtr<UUserWidget> InfoInstance;
 	
 	void Move(const FInputActionValue& InputAction);
 	void Look(const FInputActionValue& InputAction);
@@ -47,4 +56,7 @@ private:
 	void StopSprint();
 	void ToggleFlashLight();
 	void Interact();
+	void ToggleMouseMode();
+
+	bool bIsMouseMode = false;
 };

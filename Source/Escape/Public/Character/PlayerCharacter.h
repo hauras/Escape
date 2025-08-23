@@ -10,8 +10,18 @@ class USpotLightComponent;
 class UStaticMeshComponent;
 class IInteractInterface; 
 
+UENUM(BlueprintType)
+enum class EItemType : uint8
+{
+	EItemType_None UMETA(DisplayName = "None"),
+	EItemType_Key UMETA(DisplayName = "Key"),
+
+	// 추 후 아이템 추가 
+};
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStaminaPercentChangedDelegate, float, NewPercent);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBatteryChangedSignature, float, CurrentValue, float, MaxValue);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnItemChangedSignature, EItemType, NewItemType);
 
 UCLASS()
 class ESCAPE_API APlayerCharacter : public ACharacterBase
@@ -26,7 +36,12 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "UI")
 	FOnBatteryChangedSignature OnBatteryChanged;
-	
+
+	UPROPERTY(BlueprintAssignable, Category = "UI")
+	FOnItemChangedSignature OnItemChanged;
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void PickupItem(EItemType ItemType);
 	// 스프린트 시작/종료 함수. 블루프린트에서도 호출할 수 있도록 UFUNCTION을 붙입니다.
 	UFUNCTION(BlueprintCallable, Category = "Player Action")
 	void StartSprinting();
@@ -88,6 +103,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Flashlight|Battery")
 	float BatteryConsumptionRate = 2.f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory")
+	EItemType CurrentItemType = EItemType::EItemType_None;
 private:
 	// --- 내부 상태 변수 (UPROPERTY 불필요) ---
 	float CurrentStamina;

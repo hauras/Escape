@@ -25,7 +25,10 @@ AKeyItemBase::AKeyItemBase()
 
 void AKeyItemBase::Interact_Implementation(APlayerCharacter* Interactor)
 {
-	//ToDo : 추후 추가
+	if (Interactor)
+	{
+		Interactor->PickupItem(ItemType);
+	}
 	
 	Destroy();
 }
