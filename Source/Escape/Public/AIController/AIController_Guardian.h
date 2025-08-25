@@ -7,6 +7,8 @@
 
 class UBehaviorTree;
 class UBlackboard;
+class UAIPerceptionComponent;
+class UAISenseConfig_Sight;
 /**
  * 
  */
@@ -19,12 +21,19 @@ public:
 
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
-private:
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
+	TObjectPtr<UAIPerceptionComponent> AIPerceptionComponent;
+private:
 	UPROPERTY(EditDefaultsOnly, Category = "AI")
 	TObjectPtr<UBehaviorTree> BehaviorTree;
 
 	UPROPERTY()
 	TObjectPtr<UBlackboardComponent> BlackboardComponent;
 	
+	UPROPERTY()
+	TObjectPtr<UAISenseConfig_Sight> SightConfig;
+
+	UFUNCTION()
+    void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
 };
