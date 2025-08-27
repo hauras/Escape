@@ -44,7 +44,12 @@ void AEscapeController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(ToggleMouseModeAction, ETriggerEvent::Started, this, &AEscapeController::ToggleMouseMode);
 	}
 	
+	if (FocusBeamAction)
+	{
+		EnhancedInputComponent->BindAction(FocusBeamAction, ETriggerEvent::Started, this, &AEscapeController::HandleFocusBeamStarted);
+		EnhancedInputComponent->BindAction(FocusBeamAction, ETriggerEvent::Completed, this, &AEscapeController::HandleFocusBeamCompleted);
 
+	}
 	
 
 }
@@ -140,5 +145,21 @@ void AEscapeController::ToggleMouseMode()
 
 		// 3. (선택적) 게임 일시 정지 해제
 		UGameplayStatics::SetGamePaused(this, false);
+	}
+}
+
+void AEscapeController::HandleFocusBeamStarted()
+{
+	if (APlayerCharacter* PlayerCharacter = GetPawn<APlayerCharacter>())
+	{
+		PlayerCharacter->StartFocusingBeam(); // 캐릭터에게 "집중 시작해!" 명령
+	}
+}
+
+void AEscapeController::HandleFocusBeamCompleted()
+{
+	if (APlayerCharacter* PlayerCharacter = GetPawn<APlayerCharacter>())
+	{
+		PlayerCharacter->StopFocusingBeam(); // 캐릭터에게 "집중 멈춰!" 명령
 	}
 }

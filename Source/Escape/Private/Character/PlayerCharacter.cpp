@@ -7,6 +7,8 @@
 #include "Components/SpotLightComponent.h"
 #include "Interface/InteractInterface.h"
 #include "DrawDebugHelpers.h" // 디버깅을 위해 추가
+#include "Character/EnemyCharacter.h"
+#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 
 APlayerCharacter::APlayerCharacter()
@@ -49,8 +51,8 @@ APlayerCharacter::APlayerCharacter()
 	Spotlight = CreateDefaultSubobject<USpotLightComponent>(TEXT("Spotlight"));
 	Spotlight->SetupAttachment(FollowCamera);
 	Spotlight->SetVisibility(false); // 처음에는 꺼진 상태로 시작
-	Spotlight->Intensity = 5000.f; // 빛의 세기 (나중에 조절)
-	Spotlight->OuterConeAngle = 25.f; // 빛의 각도 (나중에 조절)
+	Spotlight->Intensity = 50000.f; // 빛의 세기 (나중에 조절)
+	Spotlight->OuterConeAngle = 35.f; // 빛의 각도 (나중에 조절)
 }
 
 void APlayerCharacter::BeginPlay()
@@ -59,30 +61,60 @@ void APlayerCharacter::BeginPlay()
 	SetStamina(MaxStamina);
 	CurrentBattery = MaxBattery; // 배터리 가득 채우고 시작
 
+	if (Spotlight)
+	{
+		DefaultIntensity = Spotlight->Intensity;
+		DefaultConeAngle = Spotlight->OuterConeAngle;
+		DefaultColor = Spotlight->LightColor;
+
+	}
 }
 
 void APlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	// 상호작용 가능한 오브젝트를 찾는 Trace는 계속 실행합니다.
 	TraceForInteractable();
 
+	// --- 손전등 빔 공격 로직 (최종 버전) ---
+	if (bIsFocusingBeam && bIsFlashlightOn)
+	{
+		FVector StartLocation = Spotlight->GetComponentLocation();
+		FVector EndLocation = StartLocation + (Spotlight->GetForwardVector() * 1000.f); // 사거리는 10미터
+		FHitResult HitResult;
+
+		bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, StartLocation, EndLocation, ECC_Visibility);
+
+		AEnemyCharacter* FoundEnemy = bHit ? Cast<AEnemyCharacter>(HitResult.GetActor()) : nullptr;
+
+		// 1. 만약 이번 프레임에 적을 맞췄고, 그 적이 이전에 데미지를 줬던 적과 다르다면 (새로운 타겟)
+		if (FoundEnemy && FoundEnemy != LastDamagedEnemy)
+		{
+			UGameplayStatics::ApplyDamage(FoundEnemy, 1.f, GetController(), this, UDamageType::StaticClass());
+		}
+
+		// 2. 현재 조준하고 있는 적을 LastDamagedEnemy 변수에 계속 업데이트합니다.
+		LastDamagedEnemy = FoundEnemy;
+	}
+	else
+	{
+		// 3. 빔을 쏘고 있지 않다면, '마지막으로 데미지를 준 적'에 대한 기억을 리셋합니다.
+		LastDamagedEnemy = nullptr;
+	}
 }
 
 void APlayerCharacter::ToggleFlashlight()
 {
-	UE_LOG(LogTemp, Warning, TEXT("3. Character::ToggleFlashlight() Called. CurrentBattery is %f"), CurrentBattery);
 
 	if (CurrentBattery > 0.f)
 	{
 		bIsFlashlightOn = !bIsFlashlightOn;
 		Spotlight->SetVisibility(bIsFlashlightOn);
-		UE_LOG(LogTemp, Warning, TEXT("4. Flashlight visibility set to: %s"), bIsFlashlightOn ? TEXT("True") : TEXT("False"));
 
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Flashlight NOT turned on. Battery is empty."));
 		bIsFlashlightOn = false;
 		Spotlight->SetVisibility(false);
 	}
@@ -93,6 +125,36 @@ void APlayerCharacter::PerformInteraction()
 	if (FocusedInteractable)
 	{
 		IInteractInterface::Execute_Interact(FocusedInteractable.GetObject(), this);
+	}
+}
+
+void APlayerCharacter::StartFocusingBeam()
+{
+	bIsFocusingBeam = true;
+
+	if (Spotlight)
+	{
+		Spotlight->SetIntensity(FocusIntensity);
+		Spotlight->SetOuterConeAngle(FocusConeAngle);
+		Spotlight->SetLightColor(FocusColor);
+
+		//ToDo : 소리 추가 
+	}
+}
+
+void APlayerCharacter::StopFocusingBeam()
+{
+	bIsFocusingBeam = false;
+	UE_LOG(LogTemp, Warning, TEXT("Beam FOCUSING stoped."));
+
+	if (Spotlight)
+	{
+		// Spotlight의 속성을 '원래' 모드로 되돌리기!
+		Spotlight->SetIntensity(DefaultIntensity);
+		Spotlight->SetOuterConeAngle(DefaultConeAngle);
+		Spotlight->SetLightColor(DefaultColor);
+
+		// ToDo: '충전음' 사운드 정지
 	}
 }
 
@@ -190,8 +252,6 @@ void APlayerCharacter::TraceForInteractable()
 		UEngineTypes::ConvertToTraceType(ECC_Visibility),
 		false,
 		ActorsToIgnore,
-		// [수정 2] 디버그 드로잉 옵션을 EDrawDebugTrace::ForDuration (계속 보임) 에서
-		// EDrawDebugTrace::None (안 보임) 으로 변경했습니다.
 		EDrawDebugTrace::None, 
 		HitResult,
 		true

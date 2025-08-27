@@ -9,6 +9,7 @@ class USpringArmComponent;
 class USpotLightComponent;
 class UStaticMeshComponent;
 class IInteractInterface; 
+class AEnemyCharacter; // 전방 선언 추가
 
 UENUM(BlueprintType)
 enum class EItemType : uint8
@@ -54,6 +55,13 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "Interaction")
 	void PerformInteraction();
+
+    UFUNCTION(BlueprintCallable, Category = "Player Action|Flashlight")
+	void StartFocusingBeam();
+
+	UFUNCTION(BlueprintCallable, Category = "Player Action|Flashlight")
+	void StopFocusingBeam();
+
 protected:
 	// 게임 시작 시 호출됩니다.
 	virtual auto BeginPlay() -> void override;
@@ -103,17 +111,32 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Flashlight|Battery")
 	float BatteryConsumptionRate = 2.f;
 
+	// 적 공격 빛 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Flashlight|Focus Beam")
+	float FocusIntensity = 20000.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Flashlight|Focus Beam")
+	float FocusConeAngle = 5.f;
+    
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Flashlight|Focus Beam")
+	FColor FocusColor = FColor::Cyan;
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory")
 	EItemType CurrentItemType = EItemType::EItemType_None;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Flashlight")
+	bool bIsFocusingBeam = false;
+	
 private:
-	// --- 내부 상태 변수 (UPROPERTY 불필요) ---
 	float CurrentStamina;
 	bool bIsSprinting;
 
-	/** 스태미나 타이머를 관리하기 위한 핸들입니다. */
+	float DefaultIntensity;
+	float DefaultConeAngle;
+	FColor DefaultColor;
+	
 	FTimerHandle StaminaTimerHandle;
 
-	// --- 내부 로직 함수 ---
 	void SetStamina(float NewStamina);
 	void ConsumeStamina();
 	void RecoverStamina();
@@ -125,4 +148,7 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 	TScriptInterface<IInteractInterface> FocusedInteractable;
+
+	UPROPERTY()
+	TObjectPtr<AEnemyCharacter> LastDamagedEnemy;
 };

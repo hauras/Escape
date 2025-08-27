@@ -43,6 +43,9 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	TObjectPtr<UInputAction> InteractAction;
 
+	UPROPERTY(EditAnywhere, Category = "Input")
+	TObjectPtr<UInputAction> FocusBeamAction;
+	
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> InfoScreenClass;
 
@@ -57,6 +60,7 @@ private:
 	void ToggleFlashLight();
 	void Interact();
 	void ToggleMouseMode();
-
+	void HandleFocusBeamStarted();
+	void HandleFocusBeamCompleted();
 	bool bIsMouseMode = false;
 };
