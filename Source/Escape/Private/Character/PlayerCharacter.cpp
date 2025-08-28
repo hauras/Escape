@@ -102,6 +102,25 @@ void APlayerCharacter::Tick(float DeltaTime)
 		// 3. 빔을 쏘고 있지 않다면, '마지막으로 데미지를 준 적'에 대한 기억을 리셋합니다.
 		LastDamagedEnemy = nullptr;
 	}
+
+	if (bIsFlashlightOn && CurrentBattery > 0.f)
+	{
+		const float OldBattery = CurrentBattery;
+		CurrentBattery -= BatteryConsumptionRate * DeltaTime;
+		CurrentBattery = FMath::Max(CurrentBattery, 0.f); // 0 밑으로 내려가지 않게
+
+		// 배터리 값에 변화가 생겼다면, UI에게 방송!
+		if (OldBattery != CurrentBattery && OnBatteryChanged.IsBound())
+		{
+			OnBatteryChanged.Broadcast(CurrentBattery, MaxBattery);
+		}
+
+		// 배터리가 다 닳으면 손전등을 강제로 끕니다.
+		if (CurrentBattery <= 0.f)
+		{
+			ToggleFlashlight();
+		}
+	}
 }
 
 void APlayerCharacter::ToggleFlashlight()
@@ -228,7 +247,6 @@ void APlayerCharacter::RecoverStamina()
 
 void APlayerCharacter::TraceForInteractable()
 {
-	// ... (StartLocation, EndLocation, HitResult 선언 부분은 동일) ...
 	FVector StartLocation;
 	FRotator ViewRotation;
 	if (!GetController()) return;
@@ -237,9 +255,7 @@ void APlayerCharacter::TraceForInteractable()
 	const FVector EndLocation = StartLocation + (ViewRotation.Vector() * InteractionDistance);
 	FHitResult HitResult;
 
-	// --- 바로 이 부분을 수정합니다 ---
 
-	// [수정 1] 구체의 반지름(크기)을 30.f에서 20.f로 줄였습니다.
 	const float SphereRadius = 15.f; 
 	TArray<AActor*> ActorsToIgnore;
 	ActorsToIgnore.Add(this);
