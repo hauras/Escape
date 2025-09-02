@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Character/CharacterBase.h" 
+#include "Character/CharacterBase.h"
 #include "PlayerCharacter.generated.h"
 
 class UCameraComponent;
@@ -10,6 +10,8 @@ class USpotLightComponent;
 class UStaticMeshComponent;
 class IInteractInterface; 
 class AEnemyCharacter; // 전방 선언 추가
+class ILightSensesitiveInterface;
+class USoundCue;
 
 UENUM(BlueprintType)
 enum class EItemType : uint8
@@ -61,7 +63,13 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Player Action|Flashlight")
 	void StopFocusingBeam();
+	
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void UseKeyItem();
 
+	UFUNCTION(BlueprintPure, Category = "Inventory")
+	EItemType GetCurrentItemType() const { return CurrentItemType; }
+	
 protected:
 	// 게임 시작 시 호출됩니다.
 	virtual auto BeginPlay() -> void override;
@@ -79,7 +87,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Flashlight")
 	TObjectPtr<USpotLightComponent> Spotlight;
-	
+
+	UPROPERTY(EditDefaultsOnly ,Category = "Audio")
+	TObjectPtr<USoundCue> FlashLightSound;
 	// --- 스태미나 관련 프로퍼티 (에디터에서 수정 가능) ---
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player Stats|Stamina")
 	float MaxStamina;

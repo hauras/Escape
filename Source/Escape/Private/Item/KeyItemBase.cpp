@@ -4,7 +4,8 @@
 #include "Character/PlayerCharacter.h"
 #include "Components/SphereComponent.h" //
 #include "Components/StaticMeshComponent.h"
-
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h" 
 AKeyItemBase::AKeyItemBase()
 {
 	Sphere = CreateDefaultSubobject<USphereComponent>(TEXT("Sphere"));
@@ -28,6 +29,10 @@ void AKeyItemBase::Interact_Implementation(APlayerCharacter* Interactor)
 	if (Interactor)
 	{
 		Interactor->PickupItem(ItemType);
+	}
+	if(IsValid(PickupSound))
+	{
+		UGameplayStatics::PlaySound2D(this, PickupSound);
 	}
 	
 	Destroy();

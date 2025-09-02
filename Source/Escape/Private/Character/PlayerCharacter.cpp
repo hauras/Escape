@@ -10,6 +10,8 @@
 #include "Character/EnemyCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Sound/SoundCue.h"
+#include "Interface/LightSensesitiveInterface.h"
 
 APlayerCharacter::APlayerCharacter()
 {
@@ -81,25 +83,38 @@ void APlayerCharacter::Tick(float DeltaTime)
 	if (bIsFocusingBeam && bIsFlashlightOn)
 	{
 		FVector StartLocation = Spotlight->GetComponentLocation();
-		FVector EndLocation = StartLocation + (Spotlight->GetForwardVector() * 1000.f); // 사거리는 10미터
+		FVector EndLocation = StartLocation + (Spotlight->GetForwardVector() * 1000.f);
 		FHitResult HitResult;
 
 		bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, StartLocation, EndLocation, ECC_Visibility);
+		DrawDebugLine(GetWorld(), StartLocation, EndLocation, bHit ? FColor::Green : FColor::Red, false, -1, 0, 1.0f);
 
-		AEnemyCharacter* FoundEnemy = bHit ? Cast<AEnemyCharacter>(HitResult.GetActor()) : nullptr;
-
-		// 1. 만약 이번 프레임에 적을 맞췄고, 그 적이 이전에 데미지를 줬던 적과 다르다면 (새로운 타겟)
-		if (FoundEnemy && FoundEnemy != LastDamagedEnemy)
+		if (bHit && HitResult.GetActor())
 		{
-			UGameplayStatics::ApplyDamage(FoundEnemy, 1.f, GetController(), this, UDamageType::StaticClass());
-		}
+			// [수정 1] 먼저, 부딪힌 대상이 '빛에 민감한' 인터페이스를 가졌는지 확인합니다.
+			if (HitResult.GetActor()->Implements<ULightSensesitiveInterface>())
+			{
+				// 인터페이스 함수를 호출하여, 빛의 세기와 시간을 전달합니다.
+				ILightSensesitiveInterface::Execute_OnLightReceived(HitResult.GetActor(), Spotlight->Intensity, DeltaTime);
+			}
 
-		// 2. 현재 조준하고 있는 적을 LastDamagedEnemy 변수에 계속 업데이트합니다.
-		LastDamagedEnemy = FoundEnemy;
+			// [수정 2] 기존의 '적 데미지' 로직은 그대로 두어도 좋지만,
+			// 이제 OnLightReceived 안에서 처리하는 것이 더 좋은 설계일 수 있습니다.
+			// 여기서는 일단 기존 로직을 유지하겠습니다.
+			AEnemyCharacter* FoundEnemy = Cast<AEnemyCharacter>(HitResult.GetActor());
+			if (FoundEnemy && FoundEnemy != LastDamagedEnemy)
+			{
+				UGameplayStatics::ApplyDamage(FoundEnemy, 1.f, GetController(), this, UDamageType::StaticClass());
+			}
+			LastDamagedEnemy = FoundEnemy;
+		}
+		else
+		{
+			LastDamagedEnemy = nullptr;
+		}
 	}
 	else
 	{
-		// 3. 빔을 쏘고 있지 않다면, '마지막으로 데미지를 준 적'에 대한 기억을 리셋합니다.
 		LastDamagedEnemy = nullptr;
 	}
 
@@ -125,7 +140,8 @@ void APlayerCharacter::Tick(float DeltaTime)
 
 void APlayerCharacter::ToggleFlashlight()
 {
-
+	const bool bWasOn = bIsFlashlightOn;
+	
 	if (CurrentBattery > 0.f)
 	{
 		bIsFlashlightOn = !bIsFlashlightOn;
@@ -136,6 +152,24 @@ void APlayerCharacter::ToggleFlashlight()
 	{
 		bIsFlashlightOn = false;
 		Spotlight->SetVisibility(false);
+	}
+
+	if (bWasOn != bIsFlashlightOn)
+	{
+		if (bIsFlashlightOn)
+		{
+			if (IsValid(FlashLightSound))
+			{
+				UGameplayStatics::PlaySoundAtLocation(this , FlashLightSound, GetActorLocation());
+			}
+		}
+		else
+		{
+			if (IsValid(FlashLightSound))
+			{
+				UGameplayStatics::PlaySoundAtLocation(this , FlashLightSound, GetActorLocation());
+			}
+		}
 	}
 }
 
@@ -164,7 +198,6 @@ void APlayerCharacter::StartFocusingBeam()
 void APlayerCharacter::StopFocusingBeam()
 {
 	bIsFocusingBeam = false;
-	UE_LOG(LogTemp, Warning, TEXT("Beam FOCUSING stoped."));
 
 	if (Spotlight)
 	{
@@ -175,6 +208,17 @@ void APlayerCharacter::StopFocusingBeam()
 
 		// ToDo: '충전음' 사운드 정지
 	}
+}
+
+void APlayerCharacter::UseKeyItem()
+{
+	CurrentItemType = EItemType::EItemType_None;
+
+	if (OnItemChanged.IsBound())
+	{
+		OnItemChanged.Broadcast(CurrentItemType);
+	}
+	UE_LOG(LogTemp, Warning, TEXT("Item changed."));
 }
 
 // 스태미나를 변경하고 UI에 알리는 유일한 창구

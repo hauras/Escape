@@ -8,6 +8,7 @@
 #include "KeyItemBase.generated.h"
 
 class USphereComponent;
+class USoundCue;
 
 UCLASS()
 class ESCAPE_API AKeyItemBase : public AActor, public IInteractInterface 
@@ -29,6 +30,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USphereComponent> Sphere;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly , Category = "Sound")
+	TObjectPtr<USoundCue> PickupSound;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item")
 	EItemType ItemType = EItemType::EItemType_None;
 };
