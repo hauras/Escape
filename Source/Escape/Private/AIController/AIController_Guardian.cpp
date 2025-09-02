@@ -11,6 +11,8 @@
 
 AAIController_Guardian::AAIController_Guardian()
 {
+	PrimaryActorTick.bCanEverTick = true;
+
 	BlackboardComponent = CreateDefaultSubobject<UBlackboardComponent>(TEXT("BlackboardComponent"));
 
 	AIPerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("AIPerceptionComponent"));
@@ -25,9 +27,28 @@ AAIController_Guardian::AAIController_Guardian()
 		SightConfig->DetectionByAffiliation.bDetectEnemies = true;
 		SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
 		SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
-
+		
 		AIPerceptionComponent->ConfigureSense(*SightConfig);
 		AIPerceptionComponent->SetDominantSense(*SightConfig->GetSenseImplementation());
+	}
+}
+
+void AAIController_Guardian::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (IsValid(GetBlackboardComponent()))
+	{
+		// 블랙보드의 'TargetActor' 키에 유효한 값이 있는지(즉, 추격 중인지) 확인합니다.
+		if (IsValid(GetBlackboardComponent()->GetValueAsObject(FName("TargetActor"))))
+		{
+			// GameState를 가져옵니다.
+			if (AEscapeGameState* GS = Cast<AEscapeGameState>(UGameplayStatics::GetGameState(this)))
+			{
+				// 초당 2.0 (값은 나중에 조절)의 속도로 위협도를 '지속적으로' 증가시킵니다.
+				GS->AddThreat(2.0f * DeltaTime);
+			}
+		}
 	}
 }
 
@@ -55,10 +76,14 @@ void AAIController_Guardian::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulu
 		{
 			BlackboardComponent->SetValueAsObject(FName("TargetActor"),Actor);
 			BlackboardComponent->ClearValue(FName("LastKnownLocation"));
-
-			if (AEscapeGameState* GS = Cast<AEscapeGameState>(UGameplayStatics::GetGameState(this)))
+			AEscapeGameState* GS = Cast<AEscapeGameState>(UGameplayStatics::GetGameState(this));
+			if (IsValid(GS))
 			{
-				GS->AddThreat(25.f); // 발각 시 위협 증가
+				GS->AddThreat(25.f);
+			}
+			else
+			{
+				
 			}
 		}
 		else

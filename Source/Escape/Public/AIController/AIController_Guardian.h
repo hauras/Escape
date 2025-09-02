@@ -19,6 +19,7 @@ class ESCAPE_API AAIController_Guardian : public AAIController
 public:
 	AAIController_Guardian();
 
+	virtual void Tick(float DeltaTime) override;
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 
