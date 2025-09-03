@@ -3,6 +3,7 @@
 #include "AIController/AIController_Guardian.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Character/EnemyCharacter.h"
 #include "Character/PlayerCharacter.h"
 #include "GameState/EscapeGameState.h"
 #include "Kismet/GameplayStatics.h"
@@ -45,11 +46,12 @@ void AAIController_Guardian::Tick(float DeltaTime)
 			// GameState를 가져옵니다.
 			if (AEscapeGameState* GS = Cast<AEscapeGameState>(UGameplayStatics::GetGameState(this)))
 			{
-				// 초당 2.0 (값은 나중에 조절)의 속도로 위협도를 '지속적으로' 증가시킵니다.
-				GS->AddThreat(2.0f * DeltaTime);
+				// 초당 5.0 (값은 나중에 조절)의 속도로 위협도를 '지속적으로' 증가시킵니다.
+				GS->AddThreat(5.0f * DeltaTime); 
 			}
 		}
 	}
+	
 }
 
 void AAIController_Guardian::OnPossess(APawn* InPawn)
@@ -79,7 +81,7 @@ void AAIController_Guardian::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulu
 			AEscapeGameState* GS = Cast<AEscapeGameState>(UGameplayStatics::GetGameState(this));
 			if (IsValid(GS))
 			{
-				GS->AddThreat(25.f);
+				GS->AddThreat(3.f);
 			}
 			else
 			{
