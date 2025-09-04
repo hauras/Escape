@@ -123,13 +123,16 @@ protected:
 
 	// 적 공격 빛 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Flashlight|Focus Beam")
-	float FocusIntensity = 20000.f;
+	float FocusIntensity = 50000.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Flashlight|Focus Beam")
-	float FocusConeAngle = 5.f;
+	float FocusConeAngle = 25.f;
     
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Flashlight|Focus Beam")
 	FColor FocusColor = FColor::Cyan;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Flashlight|Focus Beam")
+	float FocusAttenuationRadius = 50000.f;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory")
 	EItemType CurrentItemType = EItemType::EItemType_None;

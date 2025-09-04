@@ -190,8 +190,7 @@ void APlayerCharacter::StartFocusingBeam()
 		Spotlight->SetIntensity(FocusIntensity);
 		Spotlight->SetOuterConeAngle(FocusConeAngle);
 		Spotlight->SetLightColor(FocusColor);
-
-		//ToDo : 소리 추가 
+		Spotlight->SetAttenuationRadius(FocusAttenuationRadius);
 	}
 }
 
@@ -206,7 +205,6 @@ void APlayerCharacter::StopFocusingBeam()
 		Spotlight->SetOuterConeAngle(DefaultConeAngle);
 		Spotlight->SetLightColor(DefaultColor);
 
-		// ToDo: '충전음' 사운드 정지
 	}
 }
 
@@ -221,7 +219,6 @@ void APlayerCharacter::UseKeyItem()
 	UE_LOG(LogTemp, Warning, TEXT("Item changed."));
 }
 
-// 스태미나를 변경하고 UI에 알리는 유일한 창구
 void APlayerCharacter::SetStamina(float NewStamina)
 {
 	const float OldStamina = CurrentStamina;
@@ -229,7 +226,6 @@ void APlayerCharacter::SetStamina(float NewStamina)
 
 	if (OldStamina != CurrentStamina && OnStaminaPercentChanged.IsBound())
 	{
-		// 3. 델리게이트 이름과 파라미터를 헤더와 통일합니다.
 		const float StaminaPercent = MaxStamina > 0.f ? CurrentStamina / MaxStamina : 0.f;
 		OnStaminaPercentChanged.Broadcast(StaminaPercent);
 	}
@@ -264,7 +260,6 @@ void APlayerCharacter::StartSprinting()
 void APlayerCharacter::StopSprinting()
 {
 	bIsSprinting = false;
-	// 4. '매직 넘버' 대신 변수를 사용합니다.
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 
 	GetWorld()->GetTimerManager().ClearTimer(StaminaTimerHandle);
